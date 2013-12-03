@@ -1,0 +1,16 @@
+{
+	"casper": {
+		"verbose": true,
+		"viewportSize": {
+			"height": 1024,
+			"width": 1280
+		}
+	},
+	"fname": "url_list.json",
+	"homepage": {
+		"name": "Homepage",
+		"selector": null,
+		"url": "http://localhost:8080"
+	},
+	"url": "http://localhost:8080"
+}
