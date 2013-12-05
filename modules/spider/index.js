@@ -24,10 +24,12 @@ Spider.prototype = {
 	crawl: function(link) {
 		var instance = this;
 
+		casper.viewport(1280, 1024);
+
 		instance.visitedLinks.push(link);
 
 		if (link['selector']) {
-			casper.echo('click link with selector: ' + link['selector']);
+			casper.echo('click element with selector: ' + link['selector']);
 			casper.click(link['selector']);
 		}
 		else {
@@ -43,7 +45,11 @@ Spider.prototype = {
 			fw.write(instance.fname, JSON.stringify(link, null, '\t') + '\n', 'a');
 
 			casper.wait(1000, function() {
-				casper.capture('screenshots_desktop/' + link.id + ')' + link['name'] + '.png');
+
+				for (var i = 0; i < conf.viewport.length; i++) {
+					var shName = 'screenshots/' + conf.viewport[i].name + '/' + link.id + ')' + link['name'] + '.png';
+					instance.captureScreenshot(conf.viewport[i], shName);
+				}
 
 				casper.then(function() {
 					instance.findLinks();
@@ -83,12 +89,11 @@ Spider.prototype = {
 		});
 	},
 
-	captureScreenshots: function() {
-		casper.viewport(1280, 1024).then(function() {
-			this.capture('screenshots_desktop/' + link.id + ')' + link['name'] + '.png');
-
-			this.viewport(768, 1024).then(function() {
-				this.capture('screenshots_tablet/' + link.id + ')' + link['name'] + '.png');
+	captureScreenshot: function(viewportNode, fname) {
+		casper.echo('captureScreenshot for' + viewportNode.name);
+		casper.then(function() {
+			casper.viewport(viewportNode.width, viewportNode.height).then(function() {
+				this.capture(fname);
 			});
 		});
 	},
@@ -99,29 +104,39 @@ Spider.prototype = {
 		var links = casper.evaluate(function() {
 			var links = [];
 
-			Array.prototype.forEach.call(__utils__.findAll('a[href]'), function(link) {
+			var linkElements = __utils__.findAll('a[href]');
+
+			Array.prototype.forEach.call(linkElements, function(link) {
 				var selector = null;
 				var url = link.getAttribute('href');
-				var name = link.getAttribute('id');
+				var id = link.getAttribute('id');
 				var onclick = '';
 
+				if (url.indexOf('javascript') > -1) {
+					if (id)
+						selector = '#' + id;
+				}
+
+				// change relative path to absolute path
 				if (url.indexOf('/') == 0)
 					url = 'http://localhost:8080' + url;
 
+				// check if the element is clickable
 				if (link.hasAttribute('onClick'))
 					onclick = link.getAttribute('onClick');
 
+				// check if the link opens up a pop-up window; if so, simulate a click event
 				if (onclick.indexOf('state=pop_up') > -1 || url.indexOf('state=pop_up') > -1)
 					selector = 'a[href="' + url + '"]';
 
-				if (!name) {
+				if (!id) {
 					name = link.text.trim().replace('/', '-');
 				}
 				else {
-					name = name + "_" + link.text.trim().replace('/', '-');
+					name = id + "_" + link.text.trim().replace('/', '-');
 				}
 
-				// filter remove portlet links
+				// filter portlet remove links
 				if (name.indexOf('remove') == -1) {
 					links.push(
 						{
@@ -148,7 +163,11 @@ Spider.prototype = {
 	},
 
 	_isNewLink: function(url) {
-		if((url.indexOf(this.domain) > -1 && url.indexOf('logout') == -1 && !this.contains(this.pendingLinks, url) && !this.contains(this.visitedLinks, url))) {
+		if (url.indexOf('javascript') > -1) {
+			return true;
+		}
+
+		if ((url.indexOf(this.domain) > -1 && url.indexOf('logout') == -1 && !this.contains(this.pendingLinks, url) && !this.contains(this.visitedLinks, url))) {
 			return true;
 		}
 		else {
