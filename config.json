@@ -1,10 +1,6 @@
 {
 	"casper": {
-		"verbose": true,
-		"viewportSize": {
-			"height": 1024,
-			"width": 1280
-		}
+		"verbose": false
 	},
 	"fname": "url_list.json",
 	"homepage": {
@@ -12,5 +8,30 @@
 		"selector": null,
 		"url": "http://localhost:8080"
 	},
-	"url": "http://localhost:8080"
+	"login": {
+		"username": "Test",
+		"email": "test@liferay.com",
+		"password": "test"
+	},
+	"selectors": [
+		"a[href]", "a.dropdown-toggle","button", "div.accordion-toggle"
+	],
+	"url": "http://localhost:8080",
+	"viewport": [
+		{
+			"name": "desktop",
+			"height": 1024,
+			"width": 1280
+		},
+		{
+			"name": "tablet",
+			"height": 1024,
+			"width": 948
+		},
+		{
+			"name": "mobile",
+			"height": 960,
+			"width": 760
+		}
+	]
 }

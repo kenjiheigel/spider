@@ -10,7 +10,6 @@ link node attibutes:
 
 function Spider(domain, file) {
 	this.domain = domain;
-	this.signedIn = false;
 	this.pendingLinks = [];
 	this.visitedLinks = [];
 	this.fname = file;
@@ -30,12 +29,31 @@ Spider.prototype = {
 
 		if (link['selector']) {
 			casper.echo('click element with selector: ' + link['selector']);
+
+			if (casper.exists('.modal-focused')) {
+				casper.echo('closing modal....');
+				casper.evaluate(instance.closeDialog, '.modal-focused');
+			}
+			else if (casper.exists('.overlay-focused')) {
+				casper.echo('.....closing overlay.....');
+				casper.evaluate(instance.closeDialog, '.overlay-focused');
+			}
+
 			casper.click(link['selector']);
 		}
 		else {
 			casper.echo('open link');
 			casper.open(link['url']);
 		}
+
+		/*
+		casper.evaluate(function() {
+			if (Liferay.Dockbar) {
+				__utils__.echo('initializing dockbar....');
+				Liferay.Dockbar._init();
+			}
+		});
+*/
 
 		casper.then(function() {
 			casper.echo('url: ' + casper.getCurrentUrl());
@@ -52,34 +70,29 @@ Spider.prototype = {
 				}
 
 				casper.then(function() {
-					instance.findLinks();
+					instance.addNewLinks();
 
 					nextLink = instance._nextLink();
 
 					if (nextLink) {
 						instance.crawl(nextLink);
 					}
-					else if (!nextLink && !instance.signedIn) {
+					else if (!nextLink && !instance.isSignedIn()) {
 						casper.open(instance.domain);
 
-						casper.echo('going to sign in as test');
+						casper.echo('Going to sign in as ' + conf.login.username);
 
 						casper.then(function() {
-							loginInstance.signIn('test@liferay.com', 'test');
+							loginInstance.signIn(conf.login.email, conf.login.password);
 						});
 
 						casper.then(function() {
-							if (casper.exists('.signed-in')) {
+							if (instance.isSignedIn()) {
 								casper.echo('sign in successfully');
-								instance.signedIn = true;
 
-								instance.crawl(
-									{
-										'name': "homepage - signed in",
-										'selector': null,
-										'url': instance.domain
-									}
-								);
+								link = conf.homepage;
+								link.name = link.name + ' - signed in';
+								instance.crawl(link);
 							}
 						});
 					}
@@ -89,8 +102,26 @@ Spider.prototype = {
 		});
 	},
 
+	getDialogId: function(selector) {
+		var A = AUI().use('widget');
+		var dialog = A.Widget.getByNode(selector);
+		if (dialog) {
+			return dialog.get('id');
+		}
+		return null;
+	},
+
+	closeDialog: function(selector) {
+		__utils__.echo('------------------closing dialog-----------');
+		var A = AUI().use('widget');
+		var dialog = A.Widget.getByNode(selector);
+		if (dialog) {
+			dialog.hide();
+		}
+	},
+
 	captureScreenshot: function(viewportNode, fname) {
-		casper.echo('captureScreenshot for' + viewportNode.name);
+		casper.echo('captureScreenshot for ' + viewportNode.name);
 		casper.then(function() {
 			casper.viewport(viewportNode.width, viewportNode.height).then(function() {
 				this.capture(fname);
@@ -98,59 +129,10 @@ Spider.prototype = {
 		});
 	},
 
-	findLinks: function() {
+	addNewLinks: function() {
 		var instance = this;
 
-		var links = casper.evaluate(function() {
-			var links = [];
-
-			var linkElements = __utils__.findAll('a[href]');
-
-			Array.prototype.forEach.call(linkElements, function(link) {
-				var selector = null;
-				var url = link.getAttribute('href');
-				var id = link.getAttribute('id');
-				var onclick = '';
-
-				if (url.indexOf('javascript') > -1) {
-					if (id)
-						selector = '#' + id;
-				}
-
-				// change relative path to absolute path
-				if (url.indexOf('/') == 0)
-					url = 'http://localhost:8080' + url;
-
-				// check if the element is clickable
-				if (link.hasAttribute('onClick'))
-					onclick = link.getAttribute('onClick');
-
-				// check if the link opens up a pop-up window; if so, simulate a click event
-				if (onclick.indexOf('state=pop_up') > -1 || url.indexOf('state=pop_up') > -1)
-					selector = 'a[href="' + url + '"]';
-
-				if (!id) {
-					name = link.text.trim().replace('/', '-');
-				}
-				else {
-					name = id + "_" + link.text.trim().replace('/', '-');
-				}
-
-				// filter portlet remove links
-				if (name.indexOf('remove') == -1) {
-					links.push(
-						{
-							'name': name,
-							'selector': selector,
-							'source': document.URL,
-							'url': url
-						}
-					);
-				}
-			});
-
-			return links;
-		});
+		var links = casper.evaluate(instance.findLinks, 'a[href]');
 
 		Array.prototype.forEach.call(links, function(link) {
 			if(instance._isNewLink(link['url']) && instance._isNewPortletComponent(link) && !instance._isLanguageLink(link['url'])) {
@@ -160,6 +142,68 @@ Spider.prototype = {
 					instance.pendingLinks.push(link);
 			}
 		});
+	},
+
+	findLinks: function(selector) {
+		var links = [];
+
+		var linkElements = __utils__.findAll(selector);
+
+		Array.prototype.forEach.call(linkElements, function(link) {
+			var selector = null;
+			var url = link.getAttribute('href');
+			var id = link.getAttribute('id');
+			var onclick = '';
+
+			if (url.indexOf('javascript') > -1) {
+				if (id) {
+					selector = '#' + id;
+				}
+			}
+
+			// change relative path to absolute path
+			if (url.indexOf('/') == 0) {
+				url = 'http://localhost:8080' + url;
+			}
+
+			// check if the element is clickable
+			if (link.hasAttribute('onClick')) {
+				onclick = link.getAttribute('onClick');
+			}
+
+			// check if the link opens up a pop-up window; if so, simulate a click event
+			if (onclick.indexOf('state=pop_up') > -1 || url.indexOf('state=pop_up') > -1) {
+				selector = 'a[href="' + url + '"]';
+			}
+
+			if (!id) {
+				name = link.textContent.trim().replace('/', '-');
+			}
+			else {
+				name = id + "_" + link.textContent.trim().replace('/', '-');
+			}
+
+			// filter portlet remove links
+			if (name.indexOf('remove') == -1) {
+				links.push(
+					{
+						'name': name,
+						'selector': selector,
+						'source': document.URL,
+						'url': url
+					}
+				);
+			}
+		});
+
+		return links;
+	},
+
+	isSignedIn: function() {
+		if (casper.exists('body.signed-in'))
+			return true;
+		else
+			return false;
 	},
 
 	_isNewLink: function(url) {
