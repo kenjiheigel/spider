@@ -5,7 +5,16 @@ function Spider(domain, file) {
 
 	this.domain = domain;
 
-	// tree that stores the hierarchy of navigation
+	if (casper.cli.has('depth')) {
+		this.depth = casper.cli.get('depth');
+	}
+	else {
+		this.depth = conf.depth;
+	}
+
+	casper.echo(this.depth);
+
+	// tree that stores the hierarchy of portal
 	this.root = tree.parse(
 		{
 			name: 'Homepage',
@@ -17,8 +26,6 @@ function Spider(domain, file) {
 
 	// stack that stores the list of elements to visit
 	this.stack = [];
-
-	this.depth = 0;
 
 	this.fname = file;
 
@@ -73,6 +80,7 @@ Spider.prototype = {
 		__utils__.echo('------------------closing dialog-----------');
 		var A = AUI().use('widget');
 		var dialog = A.Widget.getByNode(selector);
+
 		if (dialog) {
 			dialog.hide();
 		}
@@ -91,7 +99,7 @@ Spider.prototype = {
 
 		casper.then(function printStackStatus() {
 			console.log(styleMsg(instance.stack.length + ' elements left to visit', 'status'));
-		})
+		});
 
 		casper.then(function getNextElement() {
 			if (instance.stack.length) {
@@ -222,7 +230,7 @@ Spider.prototype = {
 				});
 */
 				casper.then(function findNewElements() {
-					if (node.model.id.split("\'").length <= 3) {
+					if (node.model.id.split("\'").length <= instance.depth) {
 						instance.addNewLinks(node);
 					}
 
@@ -243,10 +251,6 @@ Spider.prototype = {
 			loginInstance.signIn(conf.login.email, conf.login.password);
 		});
 	},
-};
-
-function msgType(type) {
-	return colorizer.colorize('[' + type + ']', type.toUpperCase());
 };
 
 module.exports.Spider = Spider;

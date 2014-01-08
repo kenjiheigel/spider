@@ -3,6 +3,7 @@
 		"logLevel": "error",
 		"verbose": true
 	},
+	"depth": 2,
 	"fname": "url_list",
 	"homepage": {
 		"name": "Homepage",
