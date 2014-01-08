@@ -1,18 +1,30 @@
-/*
-link node attibutes:
-{
-	id: link id if <a> has the id attribute; otherwise, page title. Used for screenshot name
-	selector: selector of the link if the link requires user click
-	source: where the link is obtained from
-	url: url of the link
-}
-*/
-
+/**
+ * The class for web crawling
+ */
 function Spider(domain, file) {
+
 	this.domain = domain;
-	this.pendingLinks = [];
-	this.visitedLinks = [];
+
+	// tree that stores the hierarchy of navigation
+	this.root = tree.parse(
+		{
+			name: 'Homepage',
+			occurrence: 1,
+			url: domain,
+			id: '0'
+		}
+	);
+
+	// stack that stores the list of elements to visit
+	this.stack = [];
+
+	this.depth = 0;
+
 	this.fname = file;
+
+	// object that serves as a lookup table for duplicate links
+	this.clickablElements = {};
+	this.clickablElements[domain] = 1;
 
 	fw.write(this.fname, '', 'w');
 }
@@ -20,85 +32,87 @@ function Spider(domain, file) {
 Spider.prototype = {
 	constructor: Spider,
 
-	crawl: function(link) {
+	addNewLinks: function(node) {
+		var instance = this;
+		var id = node.model.id;
+		var count = 0;
+
+		var links = casper.evaluate(instance.getLinks, 'a[href]', instance.domain, instance.clickablElements);
+
+		if (links.length == 0) {
+			return;
+		}
+
+		console.log(styleMsg('Found ' + links.length + ' new elements', 'info'));
+
+		var newNode;
+
+		for (var i = 0; i < links.length; i++) {
+			// add new link to lookup table
+			instance.clickablElements[links[i].url] = 1;
+
+			// add new link to tree
+			newNode = tree.parse(links[i]);
+			newNode.model.id = id + '\'' + (i+1);
+			node.addChild(newNode);
+
+			// push new link to stack
+			instance.stack.push(newNode);
+		}
+	},
+
+	captureScreenshot: function(viewportNode, fname) {
+		casper.then(function setViewportSize() {
+			casper.viewport(viewportNode.width, viewportNode.height).then(function takeScreenshot() {
+				this.capture(fname);
+			});
+		});
+	},
+
+	closeDialog: function(selector) {
+		__utils__.echo('------------------closing dialog-----------');
+		var A = AUI().use('widget');
+		var dialog = A.Widget.getByNode(selector);
+		if (dialog) {
+			dialog.hide();
+		}
+	},
+
+	crawl: function(node) {
 		var instance = this;
 
-		casper.viewport(1280, 1024);
-
-		instance.visitedLinks.push(link);
-
-		if (link['selector']) {
-			casper.echo('click element with selector: ' + link['selector']);
-
-			if (casper.exists('.modal-focused')) {
-				casper.echo('closing modal....');
-				casper.evaluate(instance.closeDialog, '.modal-focused');
-			}
-			else if (casper.exists('.overlay-focused')) {
-				casper.echo('.....closing overlay.....');
-				casper.evaluate(instance.closeDialog, '.overlay-focused');
-			}
-
-			casper.click(link['selector']);
-		}
-		else {
-			casper.echo('open link');
-			casper.open(link['url']);
+		if (!node) {
+			node = instance.root;
 		}
 
-		/*
-		casper.evaluate(function() {
-			if (Liferay.Dockbar) {
-				__utils__.echo('initializing dockbar....');
-				Liferay.Dockbar._init();
-			}
+		casper.then(function crawl() {
+			instance.process(node);
 		});
-*/
 
-		casper.then(function() {
-			casper.echo('url: ' + casper.getCurrentUrl());
+		casper.then(function printStackStatus() {
+			console.log(styleMsg(instance.stack.length + ' elements left to visit', 'status'));
+		})
 
-			link.id = instance.visitedLinks.length;
+		casper.then(function getNextElement() {
+			if (instance.stack.length) {
+				instance.crawl(instance.stack.shift());
+			}
+			else {
+				if (!instance.isSignedIn()) {
+					instance.signIn();
 
-			fw.write(instance.fname, JSON.stringify(link, null, '\t') + '\n', 'a');
-
-			casper.wait(1000, function() {
-
-				for (var i = 0; i < conf.viewport.length; i++) {
-					var shName = 'screenshots/' + conf.viewport[i].name + '/' + link.id + ')' + link['name'] + '.png';
-					instance.captureScreenshot(conf.viewport[i], shName);
+					casper.then(function afterSignIn() {
+						if (instance.isSignedIn()) {
+							console.log(styleMsg('Successfully signed in as ' + conf.login.username, 'pass'));
+							instance.root.model.name +=  ' - signedIn';
+							instance.crawl();
+						}
+					});
 				}
-
-				casper.then(function() {
-					instance.addNewLinks();
-
-					nextLink = instance._nextLink();
-
-					if (nextLink) {
-						instance.crawl(nextLink);
-					}
-					else if (!nextLink && !instance.isSignedIn()) {
-						casper.open(instance.domain);
-
-						casper.echo('Going to sign in as ' + conf.login.username);
-
-						casper.then(function() {
-							loginInstance.signIn(conf.login.email, conf.login.password);
-						});
-
-						casper.then(function() {
-							if (instance.isSignedIn()) {
-								casper.echo('sign in successfully');
-
-								link = conf.homepage;
-								link.name = link.name + ' - signed in';
-								instance.crawl(link);
-							}
-						});
-					}
-				});
-
-			});
+				else {
+					console.log(styleMsg('End of crawling!', 'status'));
+				}
+			}
 		});
 	},
 
@@ -111,88 +125,43 @@ Spider.prototype = {
 		return null;
 	},
 
-	closeDialog: function(selector) {
-		__utils__.echo('------------------closing dialog-----------');
-		var A = AUI().use('widget');
-		var dialog = A.Widget.getByNode(selector);
-		if (dialog) {
-			dialog.hide();
-		}
-	},
-
-	captureScreenshot: function(viewportNode, fname) {
-		casper.echo('captureScreenshot for ' + viewportNode.name);
-		casper.then(function() {
-			casper.viewport(viewportNode.width, viewportNode.height).then(function() {
-				this.capture(fname);
-			});
-		});
-	},
-
-	addNewLinks: function() {
-		var instance = this;
-
-		var links = casper.evaluate(instance.findLinks, 'a[href]');
-
-		Array.prototype.forEach.call(links, function(link) {
-			if(instance._isNewLink(link['url']) && instance._isNewPortletComponent(link) && !instance._isLanguageLink(link['url'])) {
-				if(link['selector'])
-					instance.pendingLinks.unshift(link);
-				else
-					instance.pendingLinks.push(link);
-			}
-		});
-	},
-
-	findLinks: function(selector) {
+	getLinks: function(selector, domain, lookup) {
 		var links = [];
 
-		var linkElements = __utils__.findAll(selector);
+		var list = __utils__.findAll(selector);
 
-		Array.prototype.forEach.call(linkElements, function(link) {
-			var selector = null;
-			var url = link.getAttribute('href');
-			var id = link.getAttribute('id');
-			var onclick = '';
+		Array.prototype.forEach.call(list, function(item) {
+			var obj = {};
+			var id = item.getAttribute('id');
+			var url = item.getAttribute('href');
 
-			if (url.indexOf('javascript') > -1) {
-				if (id) {
-					selector = '#' + id;
-				}
+			if (id) {
+				obj.name = '#' + id + '_' + item.textContent.trim().replace('/', '-');
+			}
+			else {
+				obj.name = item.textContent.trim().replace('/', '-');
 			}
 
 			// change relative path to absolute path
-			if (url.indexOf('/') == 0) {
-				url = 'http://localhost:8080' + url;
+			if (url) {
+				if (url.indexOf('/') == 0) {
+					obj.url = 'http://localhost:8080' + url;
+				}
+				else {
+					obj.url = url;
+				}
+
+				obj.selector = 'a[href="' + url + '"]';
+			}
+			else if (id) {
+				obj.selector = '#' + id;
 			}
 
-			// check if the element is clickable
-			if (link.hasAttribute('onClick')) {
-				onclick = link.getAttribute('onClick');
+			if ( (obj.url.indexOf(domain) != 0 /*&& obj.url.indexOf('javascript') == -1*/) || obj.url.indexOf('logout') > -1 || obj.url.indexOf('languageId') > -1 || obj.url.indexOf('delete') > -1 || obj.name.indexOf('Return to Full Page') > -1) {
 			}
-
-			// check if the link opens up a pop-up window; if so, simulate a click event
-			if (onclick.indexOf('state=pop_up') > -1 || url.indexOf('state=pop_up') > -1) {
-				selector = 'a[href="' + url + '"]';
-			}
-
-			if (!id) {
-				name = link.textContent.trim().replace('/', '-');
-			}
-			else {
-				name = id + "_" + link.textContent.trim().replace('/', '-');
-			}
-
-			// filter portlet remove links
-			if (name.indexOf('remove') == -1) {
-				links.push(
-					{
-						'name': name,
-						'selector': selector,
-						'source': document.URL,
-						'url': url
-					}
-				);
+			else if (!lookup[obj.url]) {
+				lookup[obj.url] = 1;
+				links.push(obj);
 			}
 		});
 
@@ -206,76 +175,78 @@ Spider.prototype = {
 			return false;
 	},
 
-	_isNewLink: function(url) {
-		if (url.indexOf('javascript') > -1) {
-			return true;
-		}
-
-		if ((url.indexOf(this.domain) > -1 && url.indexOf('logout') == -1 && !this.contains(this.pendingLinks, url) && !this.contains(this.visitedLinks, url))) {
+	lookup: function(node) {
+		if (this.clickablElements[node.model.url]) {
+			this.clickablElements[node.model.url]++;
 			return true;
 		}
 		else {
+			this.clickablElements[node.model.url] = 1;
 			return false;
 		}
 	},
 
-	_isNewPortletComponent: function(node) {
-		for (var i = 0; i < this.pendingLinks.length; i++) {
-			if (this.pendingLinks[i]['name'] == node['name']) {
-				return false;
+	process: function(node) {
+		var instance = this;
+
+		casper.viewport(1280, 1024);
+
+		// click on element or open a page
+		if (node.model.selector) {
+
+			if (!casper.exists(node.model.selector)) {
+				casper.open(node.parent.model.url);
 			}
-		}
 
-		for (var i = 0; i < this.visitedLinks.length; i++) {
-			if (this.visitedLinks[i]['name'] == node['name']) {
-				return false;
-			}
-		}
-
-		return true;
-	},
-
-	_nextLink: function() {
-		if(this.pendingLinks.length > 0) {
-			return this.pendingLinks.shift();
+			casper.then(function clickSelector() {
+				casper.click(node.model.selector);
+			});
 		}
 		else {
-			return null;
+			casper.open(node.model.url);
 		}
+
+		casper.then(function waitForPageLoad() {
+			casper.wait(1000, function screenshots() {
+
+				//take screenshots
+				for (var i = 0; i < conf.viewport.length; i++) {
+					var shName = 'screenshots/' + conf.viewport[i].name + '/' + node.model.id + '_' + node.model.name + '.png';
+					instance.captureScreenshot(conf.viewport[i], shName);
+				}
+/*
+				casper.then(function writeToJSON() {
+					//fw.write(instance.fname, JSON.stringify(node.model, null, '\t') + '\n', 'a');
+
+					fw.write(instance.fname, node.model.id + '_' + node.model.name + ': ' + node.model.url + '\n', 'a');
+				});
+*/
+				casper.then(function findNewElements() {
+					if (node.model.id.split("\'").length <= 3) {
+						instance.addNewLinks(node);
+					}
+
+				});
+
+			});
+		});
 	},
 
-	_isLanguageLink: function(url) {
-		if(url.indexOf('languageId') > -1) {
-			return true;
-		}
-		else {
-			return false;
-		}
+	signIn: function() {
+		var instance = this;
+
+		casper.open(instance.domain);
+
+		console.log(styleMsg('Going to sign in as ' + conf.login.username, 'warning'));
+
+		casper.then(function signIn() {
+			loginInstance.signIn(conf.login.email, conf.login.password);
+		});
 	},
+};
 
-	escapeRegExp: function(str) {
-		return str.replace(/([*+?^$()|\[\]\/\\])/g, "\\$1");
-	},
-
-	contains: function(array, target) {
-		target = this.escapeRegExp(target);
-
-		if (target.indexOf('_11_p_u_i_d') > -1) {
-			target = target.replace(/(_11_p_u_i_d(=|%3D))[0-9]+/g, '$1[0-9]+');
-		}
-
-		target = new RegExp(target);
-
-		var compare;
-
-		for (var i = 0; i < array.length; i++) {
-			compare = array[i]['url'].match(target);
-			if (array[i]['url'] == compare) {
-				return true;
-			}
-		}
-		return false;
-	}
+function msgType(type) {
+	return colorizer.colorize('[' + type + ']', type.toUpperCase());
 };
 
 module.exports.Spider = Spider;

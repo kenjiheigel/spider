@@ -1,8 +1,9 @@
 {
 	"casper": {
-		"verbose": false
+		"logLevel": "error",
+		"verbose": true
 	},
-	"fname": "url_list.json",
+	"fname": "url_list",
 	"homepage": {
 		"name": "Homepage",
 		"selector": null,

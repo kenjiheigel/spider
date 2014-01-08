@@ -1,38 +1,51 @@
 #!/usr/bin/env casperjs
 
+var colorizer = require('colorizer').create('Colorizer');
 var conf = require('config.json');
 
+conf.casper.viewportSize = conf.viewport[0];
 var casper = require('casper').create(conf.casper);
 
 var Login = require('modules/login').Login;
 var Spider = require('modules/spider').Spider;
+var TreeModel = require('modules/spider/TreeModel.js');
 var utils = require('utils');
 var fw = require('fs');
 
-var spiderInstance = new Spider(conf.url, conf.fname);
 var loginInstance = new Login();
+var tree = new TreeModel();
+var spiderInstance = new Spider(conf.url, conf.fname);
+
+var styleType = {
+	'error': 'red',
+	'pass': 'green',
+	'status': 'magenta',
+	'info': 'cyan',
+	'warning': 'yellow'
+};
+
+function styleMsg(msg, type) {
+	var tag = colorizer.format('[' + type.toUpperCase() + ']', {
+		bg: 'black',
+		fg: styleType[type],
+		bold: true
+	});
+
+	return tag + ' ' + msg;
+};
 
 casper.start(
 	conf.url,
 	function() {
-		casper.echo('Liferay web crawler is running');
+		console.log(styleMsg('Liferay web crawler is running...', 'status'));
+		spiderInstance.crawl();
 	}
 );
-
-casper.then(function() {
-	spiderInstance.crawl(conf.homepage);
-});
-
-casper.then(function () {
-
-});
 
 casper.run(
 	function() {
 		casper.echo('Done.');
 
-		fw.close();
-
-		casper.test.renderResults(true, 0, 'test-results.xml');
+		casper.exit();
 	}
 );
