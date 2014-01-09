@@ -13,7 +13,17 @@ The results will be displayed in the console, a folder "screenshots" and a file 
 
 screenshots folder contains the screenshots captured.
 
+Command Line Options
+---------------------
+--log-level: set the logging level
 
+--verbose: prints debugging message to console; used in combination with --log-level
+
+--depth: set the depth limit for the crawler
+
+For example,
+
+$ casperjs --verbose --log-level=debug --depth=3 main.js
 
 Colored Output in Windows Consoles
 -----------------------------------
