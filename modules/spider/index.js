@@ -12,8 +12,6 @@ function Spider(domain, file) {
 		this.depth = conf.depth;
 	}
 
-	casper.echo(this.depth);
-
 	// tree that stores the hierarchy of portal
 	this.root = tree.parse(
 		{
@@ -140,8 +138,10 @@ Spider.prototype = {
 
 		Array.prototype.forEach.call(list, function(item) {
 			var obj = {};
-			var id = item.getAttribute('id');
-			var url = item.getAttribute('href');
+			var id = item.id;
+			var url = item.href;
+
+			__utils__.echo(getSelector(item));
 
 			if (id) {
 				obj.name = '#' + id + '_' + item.textContent.trim().replace('/', '-');
