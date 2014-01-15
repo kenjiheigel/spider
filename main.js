@@ -11,6 +11,7 @@ var Spider = require('modules/spider').Spider;
 var TreeModel = require('modules/spider/TreeModel.js');
 var utils = require('utils');
 var fw = require('fs');
+var x = require('casper').selectXPath;
 
 var loginInstance = new Login();
 var tree = new TreeModel();

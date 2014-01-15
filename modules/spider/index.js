@@ -41,29 +41,37 @@ Spider.prototype = {
 		var instance = this;
 		var id = node.model.id;
 		var count = 0;
-
-		var links = casper.evaluate(instance.getLinks, 'a[href]', instance.domain, instance.clickablElements);
-
-		if (links.length == 0) {
-			return;
-		}
-
-		console.log(styleMsg('Found ' + links.length + ' new elements', 'info'));
-
 		var newNode;
 
+		var links = casper.evaluate(instance.getLinks, 'a[href]', instance.domain);
+
+		console.log('Got ' + links.length + ' elements');
+
 		for (var i = 0; i < links.length; i++) {
-			// add new link to lookup table
-			instance.clickablElements[links[i].url] = 1;
-
-			// add new link to tree
-			newNode = tree.parse(links[i]);
-			newNode.model.id = id + '\'' + (i+1);
-			node.addChild(newNode);
-
-			// push new link to stack
-			instance.stack.push(newNode);
+			if (links[i].name.indexOf('#') == 0) {
+				if (!instance.clickablElements[links[i].name]) {
+					instance.clickablElements[links[i].name] = 1;
+					newNode = node.addChild(tree.parse(links[i]));
+					newNode.model.id = id + '\'' + (++count);
+					instance.stack.push(newNode);
+				}
+			}
+			else if (links[i].url) {
+				if (!instance.clickablElements[links[i].url]) {
+					instance.clickablElements[links[i].url] = 1;
+					newNode = node.addChild(tree.parse(links[i]));
+					newNode.model.id = id + '\'' + (++count);
+					instance.stack.push(newNode);
+				}
+			}
+			else {
+				newNode = node.addChild(tree.parse(links[i]));
+				newNode.model.id = id + '\'' + (++count);
+				instance.stack.push(newNode);
+			}
 		}
+
+		console.log(styleMsg('Found ' + count + ' new elements', 'info'));
 	},
 
 	captureScreenshot: function(viewportNode, fname) {
@@ -131,7 +139,7 @@ Spider.prototype = {
 		return null;
 	},
 
-	getLinks: function(selector, domain, lookup) {
+	getLinks: function(selector, domain) {
 		var links = [];
 
 		var list = __utils__.findAll(selector);
@@ -139,36 +147,20 @@ Spider.prototype = {
 		Array.prototype.forEach.call(list, function(item) {
 			var obj = {};
 			var id = item.id;
-			var url = item.href;
 
-			__utils__.echo(getSelector(item));
+			obj.url = item.href;
+			obj.selector = getSelector(item);
 
-			if (id) {
-				obj.name = '#' + id + '_' + item.textContent.trim().replace('/', '-');
+			if (id && id.indexOf('yui_patched') != 0) {
+				obj.name = '#' + id;
 			}
 			else {
 				obj.name = item.textContent.trim().replace('/', '-');
 			}
 
-			// change relative path to absolute path
-			if (url) {
-				if (url.indexOf('/') == 0) {
-					obj.url = 'http://localhost:8080' + url;
-				}
-				else {
-					obj.url = url;
-				}
-
-				obj.selector = 'a[href="' + url + '"]';
+			if ( (obj.url && ( (obj.url.indexOf(domain) != 0 && obj.url.indexOf('javascript') == -1) || obj.url.indexOf('logout') > -1 || obj.url.indexOf('languageId') > -1 || obj.url.indexOf('delete') > -1 )) || obj.name.indexOf('Return to Full Page') > -1 || obj.name.indexOf('Delete') > -1) {
 			}
-			else if (id) {
-				obj.selector = '#' + id;
-			}
-
-			if ( (obj.url.indexOf(domain) != 0 /*&& obj.url.indexOf('javascript') == -1*/) || obj.url.indexOf('logout') > -1 || obj.url.indexOf('languageId') > -1 || obj.url.indexOf('delete') > -1 || obj.name.indexOf('Return to Full Page') > -1) {
-			}
-			else if (!lookup[obj.url]) {
-				lookup[obj.url] = 1;
+			else {
 				links.push(obj);
 			}
 		});
@@ -201,9 +193,18 @@ Spider.prototype = {
 
 		// click on element or open a page
 		if (node.model.selector) {
+			if (node.model.selector.indexOf('/') == 0) {
+				node.model.selector = x(node.model.selector);
+			}
 
 			if (!casper.exists(node.model.selector)) {
 				casper.open(node.parent.model.url);
+			}
+
+			if (node.model.selector.indexOf('_145_') > -1) {
+				casper.thenEvaluate(function initDockbar() {
+					Liferay.Dockbar._init();
+				});
 			}
 
 			casper.then(function clickSelector() {

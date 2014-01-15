@@ -4,7 +4,7 @@
 		"logLevel": "error",
 		"verbose": true
 	},
-	"depth": 2,
+	"depth": 3,
 	"fname": "url_list",
 	"homepage": {
 		"name": "Homepage",
@@ -17,7 +17,7 @@
 		"password": "test"
 	},
 	"selectors": [
-		"a[href]", "a.dropdown-toggle","button", "div.accordion-toggle"
+		"a[href]", "a.dropdown-toggle","button", "div.accordion-toggle", "select", "lfr-device-item"
 	],
 	"url": "http://localhost:8080",
 	"viewport": [
