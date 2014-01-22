@@ -48,6 +48,8 @@ Spider.prototype = {
 		console.log('Got ' + links.length + ' elements');
 
 		for (var i = 0; i < links.length; i++) {
+			//console.log(links[i].selector);
+
 			if (links[i].name.indexOf('#') == 0) {
 				if (!instance.clickablElements[links[i].name]) {
 					instance.clickablElements[links[i].name] = 1;
@@ -158,7 +160,10 @@ Spider.prototype = {
 				obj.name = item.textContent.trim().replace('/', '-');
 			}
 
-			if ( (obj.url && ( (obj.url.indexOf(domain) != 0 && obj.url.indexOf('javascript') == -1) || obj.url.indexOf('logout') > -1 || obj.url.indexOf('languageId') > -1 || obj.url.indexOf('delete') > -1 )) || obj.name.indexOf('Return to Full Page') > -1 || obj.name.indexOf('Delete') > -1) {
+			// delete -> removing portlet
+			// remove -> removing sites
+			// unsubscribe -> messageboards, articles
+			if ( (obj.url && ( (obj.url.indexOf(domain) != 0 && obj.url.indexOf('javascript') == -1) || obj.url.indexOf('logout') > -1 || obj.url.indexOf('languageId') > -1 || obj.url.indexOf('remove') > -1 || obj.url.indexOf('unsubscribe') > -1 || obj.url.indexOf('delete') > -1 )) || obj.name.indexOf('Return to Full Page') > -1 || obj.name.indexOf('Delete') > -1) {
 			}
 			else {
 				links.push(obj);
