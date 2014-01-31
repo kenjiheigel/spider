@@ -35,11 +35,15 @@ Source: https://code.google.com/p/fbug/source/browse/branches/firebug1.6/content
 
 function getSelector(element) {
 	if (element && element.id && element.id !='') {
-		return '#' + element.id;
+		return '#' + escape(element.id);
 	}
 	else {
 		return getXpath(element);
 	}
+};
+
+function escape(selector) {
+	return selector.replace('.', '\\.');
 };
 
 function getXpath(element) {
