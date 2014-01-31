@@ -43,7 +43,9 @@ Spider.prototype = {
 		var count = 0;
 		var newNode;
 
-		var links = casper.evaluate(instance.getLinks, 'a[href]', instance.domain);
+		var links = casper.evaluate(function(selector, domain) {
+			return getLinks(selector, domain);
+		}, 'a[href]', instance.domain);
 
 		for (var i = 0; i < links.length; i++) {
 			//console.log(links[i].selector);
@@ -80,16 +82,6 @@ Spider.prototype = {
 				this.capture(fname);
 			});
 		});
-	},
-
-	closeDialog: function(selector) {
-		__utils__.echo('------------------closing dialog-----------');
-		var A = AUI().use('widget');
-		var dialog = A.Widget.getByNode(selector);
-
-		if (dialog) {
-			dialog.hide();
-		}
 	},
 
 	crawl: function(node) {
@@ -131,63 +123,11 @@ Spider.prototype = {
 		});
 	},
 
-	getDialogId: function(selector) {
-		var A = AUI().use('widget');
-		var dialog = A.Widget.getByNode(selector);
-		if (dialog) {
-			return dialog.get('id');
-		}
-		return null;
-	},
-
-	getLinks: function(selector, domain) {
-		var links = [];
-
-		var list = __utils__.findAll(selector);
-
-		Array.prototype.forEach.call(list, function(item) {
-			var obj = {};
-			var id = item.id;
-
-			obj.url = item.href;
-			obj.selector = getSelector(item);
-
-			if (id && id.indexOf('yui_patched') != 0) {
-				obj.name = '#' + id;
-			}
-			else {
-				obj.name = item.textContent.trim().replace('/', '-');
-			}
-
-			// delete -> removing portlet
-			// remove -> removing sites
-			// unsubscribe -> messageboards, articles
-			if ( (obj.url && ( (obj.url.indexOf(domain) != 0 && obj.url.indexOf('javascript') == -1) || obj.url.indexOf('logout') > -1 || obj.url.indexOf('languageId') > -1 || obj.url.indexOf('remove') > -1 || obj.url.indexOf('unsubscribe') > -1 || obj.url.indexOf('delete') > -1 )) || obj.name.indexOf('Return to Full Page') > -1 || obj.name.indexOf('Delete') > -1) {
-			}
-			else {
-				links.push(obj);
-			}
-		});
-
-		return links;
-	},
-
 	isSignedIn: function() {
 		if (casper.exists('body.signed-in'))
 			return true;
 		else
 			return false;
-	},
-
-	lookup: function(node) {
-		if (this.clickablElements[node.model.url]) {
-			this.clickablElements[node.model.url]++;
-			return true;
-		}
-		else {
-			this.clickablElements[node.model.url] = 1;
-			return false;
-		}
 	},
 
 	process: function(node) {

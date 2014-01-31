@@ -1,6 +1,6 @@
 {
 	"casper": {
-		"clientScripts": ["modules/spider/xpath.js"],
+		"clientScripts": ["modules/spider/xpath.js", "modules/spider/clientUtils.js"],
 		"logLevel": "error",
 		"verbose": true
 	},
