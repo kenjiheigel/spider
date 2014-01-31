@@ -45,8 +45,6 @@ Spider.prototype = {
 
 		var links = casper.evaluate(instance.getLinks, 'a[href]', instance.domain);
 
-		console.log('Got ' + links.length + ' elements');
-
 		for (var i = 0; i < links.length; i++) {
 			//console.log(links[i].selector);
 
@@ -102,6 +100,7 @@ Spider.prototype = {
 		}
 
 		casper.then(function crawl() {
+			casper.echo('====> processing node: ' + node.model.name);
 			instance.process(node);
 		});
 
@@ -198,22 +197,31 @@ Spider.prototype = {
 
 		// click on element or open a page
 		if (node.model.selector) {
+			if (node.model.selector.indexOf('_145_') > -1) {
+				casper.echo('**** Calling Liferay.Dockbar._init()');
+				casper.thenEvaluate(function initDockbar() {
+					Liferay.Dockbar._init();
+				});
+				casper.echo('**** Dockbar has been initialized');
+			}
+
 			if (node.model.selector.indexOf('/') == 0) {
 				node.model.selector = x(node.model.selector);
 			}
 
 			if (!casper.exists(node.model.selector)) {
-				casper.open(node.parent.model.url);
-			}
-
-			if (node.model.selector.indexOf('_145_') > -1) {
-				casper.thenEvaluate(function initDockbar() {
-					Liferay.Dockbar._init();
+				casper.echo('>>>> Opening up parent page ' + node.parent.model.url);
+				casper.thenOpen(node.parent.model.url);
+				casper.then(function() {
+					casper.echo('>>>> Current page is ' + casper.getCurrentUrl());
 				});
 			}
 
+			casper.echo('-------------------------------------------------');
 			casper.then(function clickSelector() {
-				casper.click(node.model.selector);
+				casper.echo('++++ Click on ' + node.model.selector);
+				var success = casper.click(node.model.selector);
+				console.log(styleMsg('Click Successfully? ' + success, 'info'));
 			});
 		}
 		else {
