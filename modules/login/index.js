@@ -4,7 +4,7 @@ Login.prototype = {
 	constructor: Login,
 
 	signIn: function(user, password) {
-		casper.fill('.sign-in-form', {
+		casper.fill('#_58_fm', {
 			'_58_login': user,
 			'_58_password': password
 		}, true);
