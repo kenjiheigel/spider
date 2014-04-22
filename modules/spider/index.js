@@ -130,12 +130,9 @@ Spider.prototype = {
 			return false;
 	},
 
-	process: function(node) {
+	doClick: function(node) {
 		var instance = this;
 
-		casper.viewport(1280, 1024);
-
-		// click on element or open a page
 		if (node.model.selector) {
 			if (node.model.selector.indexOf('_145_') > -1) {
 				casper.echo('**** Calling Liferay.Dockbar._init()');
@@ -159,6 +156,10 @@ Spider.prototype = {
 
 			casper.echo('-------------------------------------------------');
 			casper.then(function clickSelector() {
+				if (!casper.exists(node.model.selector)) {
+					return false;
+				}
+
 				casper.echo('++++ Click on ' + node.model.selector);
 				var success = casper.click(node.model.selector);
 				console.log(styleMsg('Click Successfully? ' + success, 'info'));
@@ -166,6 +167,18 @@ Spider.prototype = {
 		}
 		else {
 			casper.open(node.model.url);
+		}
+
+		return true;
+	},
+
+	process: function(node) {
+		var instance = this;
+
+		casper.viewport(1280, 1024);
+
+		if (!instance.doClick(node)) {
+			return;
 		}
 
 		casper.then(function waitForPageLoad() {
