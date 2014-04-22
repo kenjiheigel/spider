@@ -65,7 +65,7 @@ ImageComparator.prototype.isDuplicate = function(imgSrc, junkFolder) {
 			reject(Error('Image Load Error'));
 		};
 
-		image.src = imgSrc;
+		image.src = 'file:/' + imgSrc;
 	});
 };
 
@@ -112,6 +112,13 @@ ImageComparator.prototype._loadImageData = function(image) {
  * Moves given image to the specified path
  */
 ImageComparator.prototype._moveImage = function(img, path) {
+	var filename = img.replace(/^.*(\\|\/|\:)/, '');
+
+	if (!fs.isDirectory(path)) {
+		fs.makeDirectory(path);
+	}
+
+	fs.move(img, path + '/' + filename);
 };
 
 module.exports.ImageComparator = ImageComparator;
