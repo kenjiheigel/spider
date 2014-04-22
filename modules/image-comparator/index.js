@@ -11,10 +11,14 @@ function ImageComparator() {
 ImageComparator.prototype.init = function(threshold) {
 	var instance = this;
 
-	instance._canvas = document.createElement('canvas');
-	instance._canvasContext = instance._canvas.getContext('2d');
-	instance.images = [];
-	instance.threshold = threshold || 0.9;
+	return new Promise(function(resolve, reject) {
+		instance._canvas = document.createElement('canvas');
+		instance._canvasContext = instance._canvas.getContext('2d');
+		instance.images = [];
+		instance.threshold = threshold || 0.9;
+
+		resolve();
+	});
 };
 
 /**
@@ -36,6 +40,7 @@ ImageComparator.prototype.isDuplicate = function(imgSrc, junkFolder) {
 		test = 'test',
 		image = new Image();
 
+	return new Promise(function(resolve, reject) {
 		image.onload = function() {
 			var found = false,
 				i = 0,
@@ -46,14 +51,18 @@ ImageComparator.prototype.isDuplicate = function(imgSrc, junkFolder) {
 				i++;
 			}
 
-			console.log('checked ' + i + 'images');
-
 			if (found) {
 				instance._moveImage(imgSrc, junkFolder);
 			}
 			else {
 				instance.addImageData(data);
 			}
+
+			resolve();
+		};
+
+		image.onerror = function() {
+			reject(Error('Image Load Error'));
 		};
 
 		image.src = imgSrc;
