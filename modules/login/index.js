@@ -12,10 +12,10 @@ Login.prototype = {
 		casper.waitForSelector(
 			'.user-avatar-link .user-full-name',
 			function onSuccess() {
-				casper.test.pass('User logged successfully');
+				casper.echo('User logged successfully');
 			},
 			function onTimeout() {
-				casper.test.fail("Not logged successfully");
+				casper.echo("Not logged successfully");
 			}
 		);
 	},
@@ -28,10 +28,10 @@ Login.prototype = {
 				function onSuccess() {
 					casper.echo('Page URL is: ' + casper.getCurrentUrl());
 
-					casper.test.assertUrlMatch('\/web\/guest\/home', 'User logged out successfully');
+					casper.assertUrlMatch('\/web\/guest\/home', 'User logged out successfully');
 				},
 				function onFail() {
-					casper.test.fail('User not logged out successfully');
+					casper.echo('User not logged out successfully');
 				}
 			);
 		}
