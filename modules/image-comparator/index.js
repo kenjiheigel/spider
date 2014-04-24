@@ -15,7 +15,7 @@ ImageComparator.prototype.init = function(threshold) {
 		instance._canvas = document.createElement('canvas');
 		instance._canvasContext = instance._canvas.getContext('2d');
 		instance.images = [];
-		instance.threshold = threshold || 0.9;
+		instance.threshold = threshold || 0.95;
 
 		resolve();
 	});
@@ -29,7 +29,7 @@ ImageComparator.prototype.addImageData = function(data) {
 };
 
 /**
- * Checks if the specified image is a duplicate. If dulicate, move it to
+ * Checks if the specified image is a duplicate. If duplicate, move it to
  * junkFolder. Otherwise, add it to the library and store the pixel data.
  *
  * @imgSrc: image path
@@ -81,7 +81,7 @@ ImageComparator.prototype._compare = function(data1, data2) {
 		ts = Math.round(data1.length * (1 - this.threshold) * 0.25);
 
 	for (var i = 0; i < data1.length; i += 4) {
-		// each pixel has a RGBA value. Skip the 4th bit for comparison.
+		// each pixel has a RGBA value. Skip the alpha(opacity) bit for comparison.
 		if (data1[i] !== data2[i] || data1[i+1] !== data2[i+1] || data1[i+2] !== data2[i+2]) {
 			diffCount++;
 
