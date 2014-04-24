@@ -65,7 +65,7 @@ ImageComparator.prototype.isDuplicate = function(imgSrc, junkFolder) {
 			reject(Error('Image Load Error'));
 		};
 
-		image.src = 'file:/' + imgSrc;
+		image.src = 'file:/' + encodeURIComponent(imgSrc);
 	});
 };
 
