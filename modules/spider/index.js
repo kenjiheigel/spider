@@ -2,18 +2,13 @@
  * The class for web crawling
  */
 function Spider(domain, file) {
-
-	this.domain = domain;
-
-	if (casper.cli.has('depth')) {
-		this.depth = casper.cli.get('depth');
-	}
-	else {
-		this.depth = conf.depth;
-	}
+	var instance = this;
+	
+	instance.depth = casper.cli.get('depth') || conf.depth;
+	instance.domain = domain;
 
 	// tree that stores the hierarchy of portal
-	this.root = tree.parse(
+	instance.root = tree.parse(
 		{
 			name: 'Homepage',
 			occurrence: 1,
@@ -23,15 +18,26 @@ function Spider(domain, file) {
 	);
 
 	// stack that stores the list of elements to visit
-	this.stack = [];
+	instance.stack = [];
 
-	this.fname = file;
+	instance.fname = file;
 
 	// object that serves as a lookup table for duplicate links
-	this.clickablElements = {};
-	this.clickablElements[domain] = 1;
+	instance.clickablElements = {};
+	instance.clickablElements[domain] = 1;
 
-	fw.write(this.fname, '', 'w');
+	// image comparator that process duplicate screenshots
+	instance.ic = {};
+
+	for(var i = 0; i < conf.viewport.length; i++) {
+		instance.ic[conf.viewport[i].name] = new ImageComparator(conf.viewport[i].name, instance.threshold);
+	}
+
+	fs.write(instance.fname, '', 'w');
+
+	casper.on('screenshot.saved', function(viewport, file) {
+		instance.ic[viewport.name].processImage(file, fs.absolute(viewport.dir) + '/junk');
+	});
 }
 
 Spider.prototype = {
@@ -78,8 +84,10 @@ Spider.prototype = {
 
 	captureScreenshot: function(viewportNode, fname) {
 		casper.then(function setViewportSize() {
-			casper.viewport(viewportNode.width, viewportNode.height).then(function takeScreenshot() {
-				this.capture(fname);
+			this.viewport(viewportNode.width, viewportNode.height).then(function takeScreenshot() {
+				this.capture(fname).then(function checkDuplicate() {
+					casper.emit('screenshot.saved', viewportNode, fs.absolute(fname));
+				});
 			});
 		});
 	},
@@ -186,14 +194,15 @@ Spider.prototype = {
 
 				//take screenshots
 				for (var i = 0; i < conf.viewport.length; i++) {
-					var shName = 'screenshots/' + conf.viewport[i].name + '/' + node.model.id + '_' + node.model.name + '.png';
-					instance.captureScreenshot(conf.viewport[i], shName);
+					var dir = conf.viewport[i].dir + '/';
+					var filename = dir + node.model.id + '_' + node.model.name + '.png';
+					instance.captureScreenshot(conf.viewport[i], filename);
 				}
 /*
 				casper.then(function writeToJSON() {
-					//fw.write(instance.fname, JSON.stringify(node.model, null, '\t') + '\n', 'a');
+					fs.write(instance.fname, JSON.stringify(node.model, null, '\t') + '\n', 'a');
 
-					fw.write(instance.fname, node.model.id + '_' + node.model.name + ': ' + node.model.url + '\n', 'a');
+					fs.write(instance.fname, node.model.id + '_' + node.model.name + ': ' + node.model.url + '\n', 'a');
 				});
 */
 				casper.then(function findNewElements() {

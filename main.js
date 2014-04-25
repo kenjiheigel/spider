@@ -1,16 +1,16 @@
 #!/usr/bin/env casperjs
 
-var colorizer = require('colorizer').create('Colorizer');
 var conf = require('config.json');
-
 conf.casper.viewportSize = conf.viewport[0];
 var casper = require('casper').create(conf.casper);
 
+var colorizer = require('colorizer').create('Colorizer');
+var fs = require('fs');
+var ImageComparator = require('modules/image-comparator').ImageComparator;
 var Login = require('modules/login').Login;
 var Spider = require('modules/spider').Spider;
 var TreeModel = require('modules/spider/TreeModel.js');
 var utils = require('utils');
-var fw = require('fs');
 var x = require('casper').selectXPath;
 
 var loginInstance = new Login();
@@ -45,7 +45,7 @@ casper.start(
 
 casper.run(
 	function() {
-		casper.echo('Done.');
+		casper.echo('Crawling complete.');
 
 		casper.exit();
 	}
