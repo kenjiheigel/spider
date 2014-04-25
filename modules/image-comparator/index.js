@@ -118,7 +118,12 @@ ImageComparator.prototype._moveImage = function(img, path) {
 		fs.makeDirectory(path);
 	}
 
-	fs.move(img, path + '/' + filename);
+	try {
+		fs.move(img, path + '/' + filename);
+	}
+	catch(error) {
+		fs.remove(img);
+	}
 };
 
 module.exports.ImageComparator = ImageComparator;
