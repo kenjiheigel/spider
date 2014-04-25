@@ -6,11 +6,13 @@ var conf = require('config.json');
 conf.casper.viewportSize = conf.viewport[0];
 var casper = require('casper').create(conf.casper);
 
+var ImageComparator = require('modules/image-comparator').ImageComparator;
 var Login = require('modules/login').Login;
 var Spider = require('modules/spider').Spider;
 var TreeModel = require('modules/spider/TreeModel.js');
 var utils = require('utils');
-var fw = require('fs');
+var fs = require('fs');
+var Promise = require('es6-promise').Promise;
 var x = require('casper').selectXPath;
 
 var loginInstance = new Login();
