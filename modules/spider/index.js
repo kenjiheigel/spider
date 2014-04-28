@@ -103,10 +103,13 @@ Spider.prototype = {
 
 	captureScreenshot: function(viewportNode, fname) {
 		casper.then(function setViewportSize() {
-			this.viewport(viewportNode.width, viewportNode.height).then(function takeScreenshot() {
-				this.capture(fname).then(function checkDuplicate() {
-					this.emit('screenshot.saved', viewportNode.name, fs.absolute(fname));
+			casper.viewport(viewportNode.width, viewportNode.height).then(function waitForPageLoad() {
+				casper.wait(1000, function takeScreenshot() {
+					casper.capture(fname).then(function checkDuplicate() {
+						casper.emit('screenshot.saved', viewportNode.name, fs.absolute(fname));
+					});
 				});
+
 			});
 		});
 	},
@@ -205,32 +208,32 @@ Spider.prototype = {
 		casper.viewport(1280, 1024);
 
 		if (!instance.doClick(node)) {
+			console.log('!! CLICK FAILED; PROCESS NEXT NODE !!');
 			return;
 		}
 
 		casper.then(function waitForPageLoad() {
-			casper.wait(1000, function screenshots() {
-
-				//take screenshots
-				for (var i = 0; i < conf.viewport.length; i++) {
-					var dir = 'screenshots/' + conf.viewport[i].name + '/';
-					var filename = dir + node.model.id + '_' + node.model.name + '.png';
-					instance.captureScreenshot(conf.viewport[i], filename);
-				}
-/*
-				casper.then(function writeToJSON() {
-					//fs.write(instance.fname, JSON.stringify(node.model, null, '\t') + '\n', 'a');
-
-					fs.write(instance.fname, node.model.id + '_' + node.model.name + ': ' + node.model.url + '\n', 'a');
-				});
-*/
-				casper.then(function findNewElements() {
-					if (node.model.id.split("\'").length <= instance.depth) {
-						instance.addNewLinks(node);
+			casper.waitForSelector('body', function() {
+				casper.wait(1000, function screenshots() {
+					//take screenshots
+					for (var i = 0; i < conf.viewport.length; i++) {
+						var dir = 'screenshots/' + conf.viewport[i].name + '/';
+						var filename = dir + node.model.id + '_' + node.model.name + '.png';
+						instance.captureScreenshot(conf.viewport[i], filename);
 					}
+					/*
+					casper.then(function writeToJSON() {
+						//fs.write(instance.fname, JSON.stringify(node.model, null, '\t') + '\n', 'a');
 
-				});
-
+						fs.write(instance.fname, node.model.id + '_' + node.model.name + ': ' + node.model.url + '\n', 'a');
+					});
+					*/
+					casper.then(function findNewElements() {
+						if (node.model.id.split("\'").length <= instance.depth) {
+							instance.addNewLinks(node);
+						}
+					});
+				});				
 			});
 		});
 	},
