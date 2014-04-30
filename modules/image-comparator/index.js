@@ -1,3 +1,6 @@
+var async = require('async');
+var Promise = require('es6-promise').Promise;
+
 /**
  * An image comparator class
  */
@@ -5,20 +8,30 @@ function ImageComparator() {
 	this._canvas;
 	this._canvasContext;
 	this.images;
+	this.queue;
 	this.threshold;
 }
 
 ImageComparator.prototype.init = function(threshold) {
 	var instance = this;
 
-	return new Promise(function(resolve, reject) {
-		instance._canvas = document.createElement('canvas');
-		instance._canvasContext = instance._canvas.getContext('2d');
-		instance.images = [];
-		instance.threshold = threshold || 0.95;
-
-		resolve();
-	});
+	instance._canvas = document.createElement('canvas');
+	instance._canvasContext = instance._canvas.getContext('2d');
+	instance.images = [];
+	instance.queue = async.queue(
+		function(task, callback) {
+			instance.isDuplicate(task.src, task.dir).then(
+				function resolved() {
+					callback();
+				},
+				function rejected() {
+					callback();
+				}
+			);
+		},
+		1
+	);
+	instance.threshold = threshold || 0.95;
 };
 
 /**
@@ -67,6 +80,19 @@ ImageComparator.prototype.isDuplicate = function(imgSrc, junkFolder) {
 
 		image.src = 'file:/' + encodeURIComponent(imgSrc);
 	});
+};
+
+/**
+ * Adds a new task to the queue. Tasks is queued until the previous execution
+ * has completed.
+ */
+ImageComparator.prototype.processImage = function(imgSrc, junkFolder) {
+	this.queue.push(
+		{
+			src: imgSrc,
+			dir: junkFolder
+		}
+	);
 };
 
 /**
