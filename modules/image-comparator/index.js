@@ -10,6 +10,8 @@ function ImageComparator() {
 	this.images;
 	this.queue;
 	this.threshold;
+
+	this.init();
 }
 
 ImageComparator.prototype.init = function(threshold) {
@@ -18,27 +20,30 @@ ImageComparator.prototype.init = function(threshold) {
 	instance._canvas = document.createElement('canvas');
 	instance._canvasContext = instance._canvas.getContext('2d');
 	instance.images = [];
+	instance.threshold = threshold || 0.95;
+
 	instance.queue = async.queue(
 		function(task, callback) {
 			instance.isDuplicate(task.src, task.dir).then(
 				function resolved() {
 					callback();
 				},
-				function rejected() {
+				function rejected(error) {
+					console.log(error);
 					callback();
 				}
 			);
 		},
 		1
 	);
-	instance.threshold = threshold || 0.95;
 };
 
 /**
- * Adds image data to the list
+ * Adds image to the list
  */
-ImageComparator.prototype.addImageData = function(data) {
-	this.images.push(data);
+ImageComparator.prototype.addImage = function(image) {
+	this.images.push(image);
+	console.log('===================ADD IMAGE==========================');
 };
 
 /**
@@ -54,13 +59,22 @@ ImageComparator.prototype.isDuplicate = function(imgSrc, junkFolder) {
 		image = new Image();
 
 	return new Promise(function(resolve, reject) {
+		if (!fs.isFile(imgSrc)) {
+			reject(Error(imgSrc + ' is not a valid image file path'));
+		}
+
 		image.onload = function() {
 			var found = false,
 				i = 0,
-				data = instance._loadImageData(image);
+				data = instance._loadImageData(image),
+				data2;
 
 			while (!found && i < instance.images.length) {
-				found = instance._compare(data, instance.images[i]);
+				if (image.height == instance.images[i].height && image.width == instance.images[i].width) {
+					data2 = instance._loadImageData(instance.images[i]);
+					found = instance._compare(data, data2);
+				}
+
 				i++;
 			}
 
@@ -68,7 +82,7 @@ ImageComparator.prototype.isDuplicate = function(imgSrc, junkFolder) {
 				instance._moveImage(imgSrc, junkFolder);
 			}
 			else {
-				instance.addImageData(data);
+				instance.addImage(image);
 			}
 
 			resolve();
@@ -99,10 +113,6 @@ ImageComparator.prototype.processImage = function(imgSrc, junkFolder) {
  * Compares two images. Returns true if two images are similar within threshold
  */
 ImageComparator.prototype._compare = function(data1, data2) {
-	if (data1.length != data2.length) {
-		return false;
-	}
-
 	var diffCount = 0,
 		ts = Math.round(data1.length * (1 - this.threshold) * 0.25);
 
@@ -150,6 +160,8 @@ ImageComparator.prototype._moveImage = function(img, path) {
 	catch(error) {
 		fs.remove(img);
 	}
+
+	console.log('===================MOVE IMAGE=========================');
 };
 
 module.exports.ImageComparator = ImageComparator;
