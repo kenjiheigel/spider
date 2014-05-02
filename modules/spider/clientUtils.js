@@ -39,7 +39,14 @@ function getLinks(selector, domain) {
 		// delete -> removing portlet
 		// remove -> removing sites
 		// unsubscribe -> messageboards, articles
-		if ( (obj.url && ( (obj.url.indexOf(domain) != 0 && obj.url.indexOf('javascript') == -1) || obj.url.indexOf('logout') > -1 || obj.url.indexOf('languageId') > -1 || obj.url.indexOf('remove') > -1 || obj.url.indexOf('unsubscribe') > -1 || obj.url.indexOf('delete') > -1 )) || obj.name.indexOf('Return to Full Page') > -1 || obj.name.indexOf('Delete') > -1) {
+		// active/deactive -> app manager
+		if  ( (obj.url && ( (obj.url.indexOf(domain) != 0 && obj.url.indexOf('javascript') == -1) 
+				|| obj.url.indexOf('logout') > -1 || obj.url.indexOf('languageId') > -1 || obj.url.indexOf('remove') > -1 
+				|| obj.url.indexOf('unsubscribe') > -1 || obj.url.indexOf('delete') > -1 )) 
+				|| obj.name.indexOf('Return to Full Page') > -1 || obj.name.indexOf('Delete') > -1
+				|| item.className.indexOf('activate') > -1 || item.className.indexOf('deactivate') > -1
+			) 
+		{
 		}
 		else {
 			links.push(obj);
