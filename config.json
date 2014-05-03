@@ -12,7 +12,7 @@
 		"url": "http://localhost:8080"
 	},
 	"login": {
-		"username": "Test",
+		"username": "Test Test",
 		"email": "test@liferay.com",
 		"password": "test"
 	},
@@ -20,20 +20,22 @@
 		"a[href]", "a.dropdown-toggle","button", "div.accordion-toggle", "select", "lfr-device-item"
 	],
 	"threshold": 0.95,
-	"url": "http://localhost:8080",
 	"viewport": [
 		{
+			"dir": "./screenshots/desktop",
 			"name": "desktop",
 			"height": 1024,
 			"width": 1280
 		},
 		{
+			"dir": "./screenshots/tablet",
 			"name": "tablet",
 			"height": 1024,
 			"width": 948
 		},
 		{
-			"name": "mobile",
+			"dir": "./screenshots/phone",
+			"name": "phone",
 			"height": 960,
 			"width": 760
 		}

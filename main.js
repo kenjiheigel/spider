@@ -15,7 +15,7 @@ var x = require('casper').selectXPath;
 
 var loginInstance = new Login();
 var tree = new TreeModel();
-var spiderInstance = new Spider(conf.url, conf.fname);
+var spiderInstance = new Spider(conf.homepage.url, conf.fname);
 
 var styleType = {
 	'error': 'red',
@@ -36,7 +36,7 @@ function styleMsg(msg, type) {
 };
 
 casper.start(
-	conf.url,
+	conf.homepage.url,
 	function() {
 		console.log(styleMsg('Liferay web crawler is running...', 'status'));
 		spiderInstance.crawl();

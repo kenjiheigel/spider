@@ -9,14 +9,8 @@ function Spider(domain, file) {
 	instance.threshold = casper.cli.get('threshold') || conf.threshold;
 
 	// tree that stores the hierarchy of portal
-	instance.root = tree.parse(
-		{
-			name: 'Homepage',
-			occurrence: 1,
-			url: domain,
-			id: '0'
-		}
-	);
+	conf.homepage.id = '0';
+	instance.root = tree.parse(conf.homepage);
 
 	// stack that stores the list of elements to visit
 	instance.stack = [];

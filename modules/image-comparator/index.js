@@ -42,8 +42,10 @@ ImageComparator.prototype.init = function(threshold) {
  * Adds image to the list
  */
 ImageComparator.prototype.addImage = function(image) {
+	var filename = decodeURIComponent(image.src).replace(/^.*(\\|\/|\:)/, '');
+
 	this.images.push(image);
-	console.log('===================ADD IMAGE==========================');
+	console.log('[ImageComparator_' + this.name + '] ' + 'ADD IMAGE ' + filename);
 };
 
 /**
@@ -161,7 +163,7 @@ ImageComparator.prototype._moveImage = function(img, path) {
 		fs.remove(img);
 	}
 
-	console.log('===================MOVE IMAGE=========================');
+	console.log('[ImageComparator_' + this.name + '] ' + 'MOVE IMAGE ' + filename + ' to ./junk');
 };
 
 module.exports.ImageComparator = ImageComparator;
