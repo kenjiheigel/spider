@@ -6,6 +6,7 @@ function Spider(domain, file) {
 	
 	instance.depth = casper.cli.get('depth') || conf.depth;
 	instance.domain = domain;
+	instance.threshold = casper.cli.get('threshold') || conf.threshold;
 
 	// tree that stores the hierarchy of portal
 	instance.root = tree.parse(

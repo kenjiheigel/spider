@@ -19,6 +19,7 @@
 	"selectors": [
 		"a[href]", "a.dropdown-toggle","button", "div.accordion-toggle", "select", "lfr-device-item"
 	],
+	"threshold": 0.95,
 	"url": "http://localhost:8080",
 	"viewport": [
 		{
