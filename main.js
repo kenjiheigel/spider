@@ -15,7 +15,7 @@ var x = require('casper').selectXPath;
 
 var loginInstance = new Login();
 var tree = new TreeModel();
-var spiderInstance = new Spider(conf.homepage.url, conf.fname);
+var spiderInstance = new Spider(conf.homepage.url);
 
 var styleType = {
 	'error': 'red',

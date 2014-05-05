@@ -5,7 +5,6 @@
 		"verbose": true
 	},
 	"depth": 3,
-	"fname": "url_list",
 	"homepage": {
 		"name": "Homepage",
 		"selector": null,

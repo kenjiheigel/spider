@@ -1,7 +1,7 @@
 /**
  * The class for web crawling
  */
-function Spider(domain, file) {
+function Spider(domain) {
 	var instance = this;
 	
 	instance.depth = casper.cli.get('depth') || conf.depth;
@@ -15,8 +15,6 @@ function Spider(domain, file) {
 	// stack that stores the list of elements to visit
 	instance.stack = [];
 
-	instance.fname = file;
-
 	// object that serves as a lookup table for duplicate links
 	instance.clickablElements = {};
 	instance.clickablElements[domain] = 1;
@@ -27,8 +25,6 @@ function Spider(domain, file) {
 	for(var i = 0; i < conf.viewport.length; i++) {
 		instance.ic[conf.viewport[i].name] = new ImageComparator(conf.viewport[i].name, instance.threshold);
 	}
-
-	fs.write(instance.fname, '', 'w');
 
 	casper.on('screenshot.saved', function(viewport, file) {
 		instance.ic[viewport.name].processImage(file, fs.absolute(viewport.dir) + '/junk');
@@ -193,13 +189,7 @@ Spider.prototype = {
 					var filename = dir + node.model.id + '_' + node.model.name + '.png';
 					instance.captureScreenshot(conf.viewport[i], filename);
 				}
-/*
-				casper.then(function writeToJSON() {
-					fs.write(instance.fname, JSON.stringify(node.model, null, '\t') + '\n', 'a');
 
-					fs.write(instance.fname, node.model.id + '_' + node.model.name + ': ' + node.model.url + '\n', 'a');
-				});
-*/
 				casper.then(function findNewElements() {
 					if (node.model.id.split("\'").length <= instance.depth) {
 						instance.addNewLinks(node);
