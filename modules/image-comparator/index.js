@@ -4,28 +4,31 @@ var Promise = require('es6-promise').Promise;
 /**
  * An image comparator class
  */
-function ImageComparator() {
+function ImageComparator(name, threshold) {
 	this._canvas;
 	this._canvasContext;
 	this.images;
+	this.name;
 	this.queue;
 	this.threshold;
 
-	this.init();
+	this.init(name, threshold);
 }
 
-ImageComparator.prototype.init = function(threshold) {
+ImageComparator.prototype.init = function(name, threshold) {
 	var instance = this;
 
 	instance._canvas = document.createElement('canvas');
 	instance._canvasContext = instance._canvas.getContext('2d');
 	instance.images = [];
+	this.name = name || '';
 	instance.threshold = threshold || 0.95;
 
 	instance.queue = async.queue(
 		function(task, callback) {
 			instance.isDuplicate(task.src, task.dir).then(
 				function resolved() {
+					console.log('[ImageComparator_' + instance.name + '] ' + instance.queue.length() + ' images left to process');
 					callback();
 				},
 				function rejected(error) {
