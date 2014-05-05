@@ -9,7 +9,7 @@ var fs = require('fs');
 var ImageComparator = require('modules/image-comparator').ImageComparator;
 var Login = require('modules/login').Login;
 var Spider = require('modules/spider').Spider;
-var TreeModel = require('modules/spider/TreeModel.js');
+var TreeModel = require('tree-model');
 var utils = require('utils');
 var x = require('casper').selectXPath;
 
